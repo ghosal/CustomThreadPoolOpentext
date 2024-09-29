@@ -15,8 +15,6 @@ public class TaskExecutorService implements Main.TaskExecutor {
     private final ExecutorService executorService;
     private final Map<UUID, ReentrantLock> taskGroupLocks = new ConcurrentHashMap<>();
     private final Queue<Callable<?>> taskQueue = new ConcurrentLinkedQueue<>();
-    private final Queue<Callable<?>> nonBlockingQueue = new ConcurrentLinkedQueue<>();
-
     /**
      * Constructs a TaskExecutorService with a specified maximum concurrency level.
      *
