@@ -2,7 +2,6 @@ package taskExecutor;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * taskExecutor.TaskExecutorService is a service for executing tasks with a fixed thread pool.
@@ -11,19 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TaskExecutorService implements Main.TaskExecutor {
 
 
-    public static final int TIMEOUT = 120;
-    private final ExecutorService executorService;
-    private final Map<UUID, ReentrantLock> taskGroupLocks = new ConcurrentHashMap<>();
+    private final Map<UUID, ExecutorService> executorPerTaskGroup = new ConcurrentHashMap<>();
     private final Queue<Callable<?>> taskQueue = new ConcurrentLinkedQueue<>();
-    /**
-     * Constructs a TaskExecutorService with a specified maximum concurrency level.
-     *
-     * @param maxConcurrency the maximum number of concurrent threads.
-     */
-    public TaskExecutorService(int maxConcurrency) {
-        this.executorService = Executors.newFixedThreadPool(maxConcurrency);
-    }
-
 
     /**
      * Submits a task for execution and returns a Future representing the pending results of the task.
@@ -36,32 +24,26 @@ public class TaskExecutorService implements Main.TaskExecutor {
     public <T> Future<T> submitTask(Main.Task<T> task) {
         System.out.println("Task Submitted || TaskGroup = " + task.taskGroup().groupUUID());
         taskQueue.add(task.taskAction());
-        // Obtain or create a lock for the task group
-        ReentrantLock lock = taskGroupLocks.computeIfAbsent(task.taskGroup().groupUUID(), k -> new ReentrantLock());
-        lock.lock();
+        ExecutorService executorService = executorPerTaskGroup.computeIfAbsent(task.taskGroup().groupUUID(), k -> Executors.newSingleThreadExecutor());
         try {
             Callable<?> callableTask = taskQueue.poll();
             if (callableTask != null) {
                 return executorService.submit((Callable<T>) callableTask);
             }
-        } finally {
-            lock.unlock();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
 
     /**
-     * Shuts down the executor service gracefully. If the executor service does not terminate within
-     * TIMEOUT seconds, it forces a shutdown.
+     * Gracefully shuts down the ExecutorServices, waiting for the completion of tasks.
      */
-    public void shutdown() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(TIMEOUT, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-        }
+    public void shutdownExecutors() {
+        if (taskQueue.isEmpty())
+            executorPerTaskGroup.forEach((taskGroupId, executorService) -> {
+                System.out.println("Shutting down Executor for TaskGroup: " + taskGroupId);
+                executorService.shutdown();
+            });
     }
 }

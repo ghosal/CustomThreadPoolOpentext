@@ -65,29 +65,29 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        TaskExecutorService taskExecutorService = new TaskExecutorService(Runtime.getRuntime().availableProcessors());
+        TaskExecutorService taskExecutorService = new TaskExecutorService();
 
-        Main.TaskGroup group1 = new Main.TaskGroup(UUID.randomUUID());
-        Main.TaskGroup group2 = new Main.TaskGroup(UUID.randomUUID());
+        TaskGroup group1 = new TaskGroup(UUID.randomUUID());
+        TaskGroup group2 = new TaskGroup(UUID.randomUUID());
 
-        Main.Task<String> task1 = new Main.Task<>(UUID.randomUUID(), group1, Main.TaskType.READ, () -> {
-            Thread.sleep(500);
+        Task<String> task1 = new Task<>(UUID.randomUUID(), group1, TaskType.READ, () -> {
+            Thread.sleep(1000);
             return "Task 1 completed";
         });
-        Main.Task<String> task2 = new Main.Task<>(UUID.randomUUID(), group1, Main.TaskType.READ, () -> {
+        Task<String> task2 = new Task<>(UUID.randomUUID(), group1, TaskType.READ, () -> {
             Thread.sleep(1000);
             return "Task 2 completed";
         });
-        Main.Task<String> task3 = new Main.Task<>(UUID.randomUUID(), group1, Main.TaskType.READ, () -> {
-            Thread.sleep(2000);
+        Task<String> task3 = new Task<>(UUID.randomUUID(), group1, TaskType.READ, () -> {
+            Thread.sleep(1000);
             return "Task 3 completed";
         });
-        Main.Task<String> task4 = new Main.Task<>(UUID.randomUUID(), group2, Main.TaskType.READ, () -> {
-            Thread.sleep(600);
+        Task<String> task4 = new Task<>(UUID.randomUUID(), group2, TaskType.READ, () -> {
+            Thread.sleep(1000);
             return "Task 4 completed";
         });
 
-        Main.Task<String> task5 = new Main.Task<>(UUID.randomUUID(), group2, Main.TaskType.WRITE, () -> {
+        Task<String> task5 = new Task<>(UUID.randomUUID(), group2, TaskType.WRITE, () -> {
             Thread.sleep(3000);
             return "Task 5 completed";
         });
@@ -106,8 +106,7 @@ public class Main {
                 throw new RuntimeException(ex);
             }
         });
-
-        taskExecutorService.shutdown();
+        taskExecutorService.shutdownExecutors();
     }
 
 }
